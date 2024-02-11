@@ -1,0 +1,55 @@
+https://blog.slingdata.io/import-local-json-files-into-postgresql
+
+export POSTGRES='postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+
+sling conns test POSTGRES
+
+# =======================================================
+File System To Database (Postgres)
+# ======================================================
+sling run \
+    --src-stream file:///Users/soumilshah/IdeaProjects/SparkProject/Sling/orders \
+    --src-options '{"format": "csv", "options": {"delimiter": ",", "header": true}}' \
+    --tgt-conn POSTGRES \
+    --tgt-object public.orders  \
+    --debug \
+    --mode full-refresh
+
+# =======================================================
+Database (Postgres) to File System
+# ======================================================
+sling run \
+    --src-conn POSTGRES \
+    --src-stream "SELECT * FROM orders  where priority = 'HIGH'" \
+    --tgt-conn "file:////Users/soumilshah/IdeaProjects/SparkProject/Sling/output/" \
+    --tgt-options '{file_max_rows: 10, format: jsonlines}'
+    --debug
+
+
+# =======================================================
+Database (Postgres) to Database (MYSQL)
+# ======================================================
+mysql -u root -p
+password rootpassword
+
+export MYSQL='mysql://root:rootpassword@localhost:3306/mydatabase?tls=skip-verify'
+sling conns test MYSQL
+
+sling run \
+    --src-conn POSTGRES \
+    --src-stream public.orders \
+    --tgt-conn MYSQL \
+    --tgt-object public.orders  \
+    --mode full-refresh \
+    --debug
+
+sling run \
+    --src-conn POSTGRES \
+    --src-stream "SELECT order_id, name, order_value, priority, order_date FROM orders" \
+    --tgt-conn MYSQL \
+    --tgt-object public.orders  \
+    --mode full-refresh \
+    --debug
+
+
+
